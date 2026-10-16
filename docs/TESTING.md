@@ -10,3 +10,7 @@ UI 手验：空/加载/失败/会话中状态，键盘、读屏、高对比、�
 ## Foundation 验证记录（2026-10-16）
 Windows 环境、.NET SDK 10.0.402：Release 构建 0 警告/0 错误，14 项可执行协议检查通过，dotnet format 与 git diff --check 通过，win-x64 framework-dependent publish 成功。四个项目 Skills 均通过 quick_validate。已启动 WPF 并检查设备空状态与 UI Automation 文本。
 尚未执行真实双机测试、多 DPI、读屏、高对比与 Windows 11 硬件性能验收；这些是后续里程碑门槛。
+
+## 0.0.2 验证
+28 项协议、RFC1918/子网/规范地址、发现消息、过期/容量、自动启动/取消、来源接口/路由过滤和 Windows 网卡/原生 UDP socket 检查通过；原生 socket 测试不发送网络数据。Host/Controller 自包含单 EXE 已发布验证。CI 增加临时 runner 的服务安装/自动启动/UDP 端口所有者/卸载测试。不得把 --diagnose 冒充安装测试。
+当前本机没有执行服务安装，没有双机/多 DPI/防火墙隔离或用户桌面代理验收；这些仍为后续门槛。

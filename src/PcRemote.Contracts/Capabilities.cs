@@ -7,10 +7,6 @@ public sealed record ConnectionRequest(Guid SessionId, Device Controller, Sessio
 public sealed record ScreenFrame(int Width, int Height, ReadOnlyMemory<byte> EncodedBytes);
 public sealed record InputEvent(int VirtualKey, bool IsDown);
 public sealed record FileEntry(string RelativePath, long Length, bool IsDirectory);
-public interface IDeviceDiscovery
-{
-    IAsyncEnumerable<Device> DiscoverAsync(CancellationToken cancellationToken);
-}
 public interface ISessionAuthorization
 {
     Task<SessionPermission> AuthorizeAsync(ConnectionRequest request, CancellationToken cancellationToken);
