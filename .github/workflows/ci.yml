@@ -27,6 +27,8 @@ jobs:
           try {
             $installProcess = Start-Process -FilePath $hostExe -ArgumentList '--install', '--quiet' -WindowStyle Hidden -Wait -PassThru
             if ($installProcess.ExitCode -ne 0) { throw "Host installation failed: $($installProcess.ExitCode)" }
+            $reinstallProcess = Start-Process -FilePath $hostExe -ArgumentList '--install', '--quiet' -WindowStyle Hidden -Wait -PassThru
+            if ($reinstallProcess.ExitCode -ne 0) { throw "Host reinstallation failed: $($reinstallProcess.ExitCode)" }
             $service = Get-Service PcRemoteHost
             if ($service.Status -ne 'Running' -or $service.StartType -ne 'Automatic') { throw 'Service is not running automatically.' }
             $serviceInfo = Get-CimInstance Win32_Service -Filter "Name='PcRemoteHost'"

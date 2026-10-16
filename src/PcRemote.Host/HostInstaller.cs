@@ -29,7 +29,15 @@ internal static class HostInstaller
             string staging = Path.Combine(InstallDirectory, "PcRemote.Host.new.exe");
             if (File.Exists(staging)) EnsureRegularPath(staging);
             File.Copy(source, staging, overwrite: true);
-            File.Move(staging, InstalledPath, overwrite: true);
+            for (int attempt = 0; ; attempt++)
+            {
+                try { File.Move(staging, InstalledPath, overwrite: true); break; }
+                catch (IOException exception) when (attempt < 20 && (exception.HResult & 0xffff) is 32 or 33)
+                {
+                    // SCM can report Stopped just before the old process releases its image.
+                    Thread.Sleep(100);
+                }
+            }
         }
         if (!existed)
             RunSystemTool("sc.exe", "create", ServiceName, "binPath=", ServiceCommand(), "start=", "delayed-auto",
