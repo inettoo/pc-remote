@@ -1,0 +1,12 @@
+# 测试策略
+本地与 CI：restore → Release build → executable contract tests → format verify → publish。
+协议测试必须覆盖往返、字节序、截断、零/超长、坏 JSON、缺字段、未知版本和取消；测试行为而非匹配实现文本。
+后续每个网络/Windows 适配器提供接口替身测试，同时必须在两台真实 Windows 11 机器做集成验收。
+矩阵：私有/Public 网卡、双网卡、错误密钥/撤销、拔线、休眠、DPI 100/150/200%、路径遍历/链接逃逸、哈希不符、文件冲突。
+UI 手验：空/加载/失败/会话中状态，键盘、读屏、高对比、缩放；截图随 UI PR 保存。
+性能目标（0.0.7 测量）：有线千兆 1080p60，端到端 P95 <100ms、内存 <500MB、CPU <20%（记录 CPU/GPU/编码器型号）；不能达标则公开降级档位。
+0.0.1 不宣称远控端到端或真实双机测试已完成。
+
+## Foundation 验证记录（2026-10-16）
+Windows 环境、.NET SDK 10.0.402：Release 构建 0 警告/0 错误，14 项可执行协议检查通过，dotnet format 与 git diff --check 通过，win-x64 framework-dependent publish 成功。四个项目 Skills 均通过 quick_validate。已启动 WPF 并检查设备空状态与 UI Automation 文本。
+尚未执行真实双机测试、多 DPI、读屏、高对比与 Windows 11 硬件性能验收；这些是后续里程碑门槛。
