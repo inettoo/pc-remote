@@ -6,15 +6,17 @@
 |Host|单 EXE 引导/安装器、ServiceBase 服务宿主|
 |Service|服务/用户桌面代理边界契约，后续接入代理生命周期|
 |Contracts|平台中立能力接口与数据模型|
-|Protocol|独立控制帧 1.0 与发现协议 2.0，不含操作系统 API|
+|Protocol|独立控制帧 2.0 与发现协议 2.0，不含操作系统 API|
 |Transport|有界 UDP/TCP、LAN 策略与设备目录|
-|Windows|网卡枚举、IP Helper 直接路由验证|
+|Windows|网卡枚举、IP Helper 路由、用户令牌/代理启动|
 |Capture|交互用户会话屏幕采集|
 |Input|交互用户会话键鼠注入与释放|
 |FileService|受限共享根内文件操作|
 依赖：App → Controller + Windows（仅组合根）；Controller → Contracts/Transport；Host → Windows/Contracts；Windows → Transport/Contracts；Transport → Protocol/Contracts；Capture/Input/FileService/Service → Contracts。
 自动扫描在 Controller 启动，后台接口变化无需用户配置；Transport 的 socket 可注入替身，错误/取消时所有任务与 socket 都被观察和释放。
 Host 默认入口安装至 Program Files/PcRemote/PcRemote.Host.exe，启动 PcRemoteHost；SCM 使用 --service，--uninstall 移除服务及自身规则；--diagnose 不修改系统。
-ServiceBase 在 LocalSystem / Session 0 中运行。当前只处理受限 UDP 发现；后续 Capture/Input 必须在用户代理执行，不直接放进服务。
-当前没有桌面代理实现，不宣称能控制远程电脑。代理 IPC 需限定 System/目标用户 ACL、绑定会话身份、限制消息与大小；后续 ADR 细化。
+ServiceBase 在 LocalSystem / Session 0 中运行。当前处理受限 UDP 发现与 TCP/TLS 桌面代理桥；后续 Capture/Input 必须在用户代理执行，不直接放进服务。
+v0.0.3 已实现 Host --agent 用户代理，随机 pipe/目标用户 ACL/双向 PID 验证；Capture 经 IScreenCapture，Input 经 IInputSink。真实桌面矩阵待验收，详见 ADR 0008。
 无逐次授权/配对口令的行为由 ADR 0007 明确覆盖旧设计；不把发现报文当身份认证。
+
+Host 的 DesktopSessionServer 只在通过 LAN 边界后启动代理，转发白名单消息；Controller 的 RemoteDesktopClient 负责 TLS、心跳和有界输入队列。WPF RemoteWindow 负责坐标/键事件呈现、JPEG 头检查与最新帧渲染。Capture/Input 为 Windows 桌面适配器，拥有各自原生调用，不依赖 WPF。

@@ -11,10 +11,15 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        bool quiet = args.Contains("--quiet");
+        bool quiet = args.Contains("--quiet") || args.Contains("--agent");
         args = args.Where(arg => arg != "--quiet").ToArray();
         try
         {
+            if (args.Length == 3 && args[0] == "--agent" && uint.TryParse(args[2], out uint serviceId))
+            {
+                DesktopAgent.RunAsync(args[1], serviceId).GetAwaiter().GetResult();
+                return 0;
+            }
             if (args.SequenceEqual(["--service"]))
             {
                 ServiceBase.Run(new HostWindowsService());
@@ -44,7 +49,7 @@ internal static class Program
             if (uninstall) HostInstaller.Uninstall();
             else HostInstaller.Install();
             if (!quiet) MessageBox(IntPtr.Zero,
-                uninstall ? "被控服务已停止并移除。" : "被控服务已安装并启动，以后随 Windows 启动。\n控制端将自动发现这台电脑。当前版本仅实现设备发现，远控能力继续开发中。",
+                uninstall ? "被控服务已停止并移除。" : "被控服务已安装并启动，以后随 Windows 启动。\n控制端将自动发现这台电脑。支持已登录的活动控制台桌面；锁屏和 UAC 安全桌面不支持。",
                 "PC Remote 被控端", 0x40);
             return 0;
         }

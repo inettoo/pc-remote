@@ -26,7 +26,7 @@ MemoryStream Raw(string json)
 }
 await Check("round trip and big endian", async () =>
 {
-    var message = new Envelope(1, 0, Guid.NewGuid(), "Hello", JsonSerializer.SerializeToElement(new { name = "电脑" }));
+    var message = new Envelope(2, 0, Guid.NewGuid(), "Hello", JsonSerializer.SerializeToElement(new { name = "电脑" }));
     using var stream = new MemoryStream();
     await FrameCodec.WriteAsync(stream, message);
     if (BinaryPrimitives.ReadInt32BigEndian(stream.ToArray()) != stream.Length - 4) throw new Exception("Bad header");
@@ -46,11 +46,11 @@ await Check("truncated body", () => Reject<EndOfStreamException>(async () => awa
 await Check("invalid JSON", () => Reject<JsonException>(async () => await FrameCodec.ReadAsync(Raw("{"))));
 await Check("missing fields", () => Reject<JsonException>(async () => await FrameCodec.ReadAsync(Raw("{}"))));
 await Check("null envelope", () => Reject<InvalidDataException>(async () => await FrameCodec.ReadAsync(Raw("null"))));
-foreach (var version in new[] { (2, 0), (1, 1) })
+foreach (var version in new[] { (1, 0), (3, 0), (2, 1) })
     await Check($"reject version {version}", () => Reject<InvalidDataException>(() => FrameCodec.WriteAsync(new MemoryStream(),
         new Envelope(version.Item1, version.Item2, Guid.NewGuid(), "Hello", JsonSerializer.SerializeToElement(new { })))));
 await Check("invalid identity", () => Reject<InvalidDataException>(() => FrameCodec.WriteAsync(new MemoryStream(),
-    new Envelope(1, 0, Guid.Empty, "Hello", JsonSerializer.SerializeToElement(new { })))));
+    new Envelope(2, 0, Guid.Empty, "Hello", JsonSerializer.SerializeToElement(new { })))));
 await Check("cancel read", async () =>
 {
     using var cts = new CancellationTokenSource();
@@ -58,6 +58,8 @@ await Check("cancel read", async () =>
     await Reject<OperationCanceledException>(async () => await FrameCodec.ReadAsync(new MemoryStream(new byte[4]), cts.Token));
 });
 await Check("oversized write", () => Reject<InvalidDataException>(() => FrameCodec.WriteAsync(new MemoryStream(),
-    new Envelope(1, 0, Guid.NewGuid(), "Hello", JsonSerializer.SerializeToElement(new string('x', FrameCodec.MaxPayloadBytes))))));
+    new Envelope(2, 0, Guid.NewGuid(), "Hello", JsonSerializer.SerializeToElement(new string('x', FrameCodec.MaxPayloadBytes))))));
 await DiscoveryTests.RunAsync(Check);
+await DesktopTests.RunAsync(Check);
+await AgentTests.RunAsync(Check);
 Console.WriteLine($"{passed} checks passed.");

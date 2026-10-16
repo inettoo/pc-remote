@@ -9,6 +9,8 @@
     <DefineConstants>$(DefineConstants);SINGLE_FILE_HOST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../PcRemote.Capture/PcRemote.Capture.csproj" />
+    <ProjectReference Include="../PcRemote.Input/PcRemote.Input.csproj" />
     <ProjectReference Include="../PcRemote.Contracts/PcRemote.Contracts.csproj" />
     <ProjectReference Include="../PcRemote.Windows/PcRemote.Windows.csproj" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.13" />

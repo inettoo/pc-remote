@@ -15,7 +15,7 @@ public sealed class DashboardViewModel(INetworkEnvironment environment, IDeviceD
     private string error = "";
     public event PropertyChangedEventHandler? PropertyChanged;
     public ObservableCollection<DiscoveredDevice> Devices { get; } = [];
-    public string Version => "v0.0.2 · LAN Host";
+    public string Version => "v0.0.3 · LAN Desktop";
     public string Status { get => status; private set { status = value; Changed(); } }
     public string Error { get => error; private set { error = value; Changed(); } }
 

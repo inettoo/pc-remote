@@ -9,6 +9,7 @@ internal static class HostInstaller
 {
     public const string ServiceName = "PcRemoteHost";
     private const string FirewallRuleName = "PC Remote LAN Discovery";
+    private const string DesktopFirewallRule = "PC Remote LAN Desktop";
     private static string InstallDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PcRemote");
     private static string InstalledPath => Path.Combine(InstallDirectory, "PcRemote.Host.exe");
 
@@ -46,6 +47,9 @@ internal static class HostInstaller
         RunSystemTool("netsh.exe", "advfirewall", "firewall", "delete", "rule", $"name={FirewallRuleName}");
         RunSystemTool("netsh.exe", "advfirewall", "firewall", "add", "rule", $"name={FirewallRuleName}", "dir=in", "action=allow",
             $"program={InstalledPath}", "protocol=UDP", "localport=45831", "remoteip=LocalSubnet", "profile=any", "enable=yes");
+        RunSystemTool("netsh.exe", "advfirewall", "firewall", "delete", "rule", $"name={DesktopFirewallRule}");
+        RunSystemTool("netsh.exe", "advfirewall", "firewall", "add", "rule", $"name={DesktopFirewallRule}", "dir=in", "action=allow",
+            $"program={InstalledPath}", "protocol=TCP", "localport=45832", "remoteip=LocalSubnet", "profile=any", "enable=yes");
         if (!EventLog.SourceExists(ServiceName)) EventLog.CreateEventSource(ServiceName, "Application");
         using var service = new ServiceController(ServiceName);
         service.Start();
@@ -62,6 +66,7 @@ internal static class HostInstaller
             RunSystemTool("sc.exe", "delete", ServiceName);
         }
         RunSystemTool("netsh.exe", "advfirewall", "firewall", "delete", "rule", $"name={FirewallRuleName}");
+        RunSystemTool("netsh.exe", "advfirewall", "firewall", "delete", "rule", $"name={DesktopFirewallRule}");
         // Keep binaries and event history; never recursively delete a computed installation path.
     }
 
