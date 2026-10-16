@@ -7,6 +7,7 @@
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
   <DockPanel Margin="16,10">
    <Button DockPanel.Dock="Right" Content="断开连接" Click="DisconnectClick" Padding="16,8"/>
+   <Button x:Name="FilesButton" DockPanel.Dock="Right" Content="用户文件" Click="FilesClick" IsEnabled="False" Padding="16,8" Margin="0,0,8,0"/>
    <StackPanel>
     <TextBlock x:Name="DeviceText" FontSize="17" FontWeight="SemiBold"/>
     <TextBlock x:Name="StatusText" Text="正在连接…" Margin="0,4,0,0" AutomationProperties.LiveSetting="Polite"/>

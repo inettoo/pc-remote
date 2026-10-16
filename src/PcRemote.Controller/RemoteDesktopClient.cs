@@ -10,7 +10,7 @@ namespace PcRemote.Controller;
 
 public sealed record DesktopUpdate(DesktopImage? Image, string Status, bool Connected);
 
-public sealed class RemoteDesktopClient(INetworkEnvironment environment) : IAsyncDisposable
+public sealed partial class RemoteDesktopClient(INetworkEnvironment environment, IDesktopConnector connector) : IAsyncDisposable
 {
     private readonly CancellationTokenSource stop = new();
     private readonly Channel<Envelope> input = Channel.CreateBounded<Envelope>(new BoundedChannelOptions(64) { SingleReader = true });
@@ -18,9 +18,10 @@ public sealed class RemoteDesktopClient(INetworkEnvironment environment) : IAsyn
     private bool disposed;
     private volatile bool connected;
     private long lastFrame;
+    public bool IsConnected => connected;
 
     public Task RunAsync(IPAddress address, Action<DesktopUpdate> update)
-        => running = RunCoreAsync(address, update);
+        => running = Task.Run(() => RunCoreAsync(address, update));
 
     public bool TryInput(RemoteInput value)
     {
@@ -39,20 +40,15 @@ public sealed class RemoteDesktopClient(INetworkEnvironment environment) : IAsyn
 
     private async Task RunCoreAsync(IPAddress address, Action<DesktopUpdate> update)
     {
-        using var client = new TcpClient(AddressFamily.InterNetwork);
         try
         {
             update(new(null, "正在连接…", false));
             var adapter = (await environment.GetLanAdaptersAsync(stop.Token))
                 .FirstOrDefault(candidate => LanNetwork.IsPeer(candidate, address) && environment.HasDirectRoute(candidate, address))
                 ?? throw new IOException("设备已离开当前直接局域网。");
-            client.Client.Bind(new IPEndPoint(adapter.Address, 0));
-            client.Client.SetSocketOption(SocketOptionLevel.IP, (SocketOptionName)31, IPAddress.HostToNetworkOrder(adapter.InterfaceIndex));
-            client.NoDelay = true;
             using var handshake = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
             handshake.CancelAfter(TimeSpan.FromSeconds(10));
-            await client.ConnectAsync(address, DesktopMessages.Port, handshake.Token);
-            await using var tls = await DesktopTls.ClientAsync(client.GetStream(), handshake.Token);
+            await using var connection = await connector.ConnectAsync(adapter, address, handshake.Token);
             connected = true;
             update(new(null, "已连接，正在准备用户桌面…", true));
 
@@ -60,7 +56,7 @@ public sealed class RemoteDesktopClient(INetworkEnvironment environment) : IAsyn
             {
                 while (true)
                 {
-                    var message = await FrameCodec.ReadAsync(tls, stop.Token).WaitAsync(TimeSpan.FromSeconds(15), stop.Token);
+                    var message = await connection.ReceiveAsync(stop.Token).WaitAsync(TimeSpan.FromSeconds(15), stop.Token);
                     if (message.Type == "ScreenFrame")
                     {
                         var image = DesktopMessages.Read<DesktopImage>(message);
@@ -76,6 +72,7 @@ public sealed class RemoteDesktopClient(INetworkEnvironment environment) : IAsyn
                         TryInput(new(RemoteInputKind.ReleaseAll));
                         update(new(null, notice.Text, true));
                     }
+                    else if (FileMessages.IsResponse(message.Type)) await RouteFileResponseAsync(message);
                     else throw new InvalidDataException("收到不支持的桌面消息。");
                 }
             }
@@ -83,7 +80,7 @@ public sealed class RemoteDesktopClient(INetworkEnvironment environment) : IAsyn
             async Task SendAsync()
             {
                 await foreach (var message in input.Reader.ReadAllAsync(stop.Token))
-                    await FrameCodec.WriteAsync(tls, message, stop.Token);
+                    await connection.SendAsync(message, stop.Token);
             }
 
             async Task HeartbeatAsync()
@@ -119,7 +116,6 @@ public sealed class RemoteDesktopClient(INetworkEnvironment environment) : IAsyn
         {
             connected = false;
             Interlocked.Exchange(ref lastFrame, 0);
-            client.Close();
         }
     }
 

@@ -1,5 +1,5 @@
 # pc-remote
-Windows 11 x64 局域网远控项目，当前 v0.0.3。
+Windows 11 x64 局域网远控项目，当前 v0.0.4。
 
 使用目标：
 1. 被控电脑运行 **PcRemote.Host.exe**，自动安装并启动服务，之后随 Windows 启动。
@@ -7,7 +7,7 @@ Windows 11 x64 局域网远控项目，当前 v0.0.3。
 无需选网卡、账号、配对口令或被控端逐次确认。首次安装系统服务仍需 Windows 管理员权限；这与远控授权是两回事。
 服务启用即信任同一直接局域网控制端，不提供同网段用户间的身份隔离；不支持公网或外部服务器。
 
-**当前已实现安装/发现、LAN TLS 直连、主屏 JPEG 基线和键鼠通道。真实双机/用户桌面/DPI 矩阵尚未验收，属于开发预览；文件管理待开发。**
+**当前已实现安装/发现、LAN TLS 直连、主屏 JPEG 基线和键鼠通道。真实双机/用户桌面/DPI 矩阵尚未验收，属于开发预览；支持用户文件列表、上传、下载、进度与取消。**
 画面初始基线宽度≤1280、约 10fps，不宣称 1080p60。只支持已登录的活动控制台桌面，不控制锁屏、UAC 安全桌面或提权窗口，不能发送 Ctrl+Alt+Del。
 连接后点击远程画面获得键盘焦点，断开按钮随时结束；失焦会释放远端按键。
 两个 EXE 均自包含，无需预装 .NET。Host 安装至 Program Files/PcRemote；卸载使用 PcRemote.Host.exe --uninstall。
@@ -25,3 +25,5 @@ dotnet publish src/PcRemote.Host -c Release -r win-x64 --self-contained true -p:
 ```
 运行 Host 开发构建不会安装；安装器只接受 single-file 发布构建。不要把 SDK 的 dotnet run 当作安装验证。
 [范围](docs/SCOPE.md) · [路线](docs/ROADMAP.md) · [架构](docs/ARCHITECTURE.md) · [UI](docs/UI_GUIDE.md) · [协议](docs/PROTOCOL.md) · [发布](docs/RELEASE.md) · [最新交互决策](docs/decisions/0007.md)
+
+远控窗口点击“用户文件”：双击文件夹进入、双击文件下载，“上传文件”写入当前目录。默认范围是被控端当前用户目录；单文件最大 1 GiB、列表最多 128 项，上传不覆盖同名文件，链接/联接/云占位路径暂不支持。不执行或删除远端文件。两端请使用同一版本。

@@ -158,6 +158,7 @@ internal static class DiscoveryTests
             var factory = new FakeChannels();
             var vm = new DashboardViewModel(environment, new UdpDeviceDiscovery(environment, factory));
             await vm.StartAsync();
+            await factory.OpenedTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
             Assert(factory.Opened);
             await vm.StopAsync().WaitAsync(TimeSpan.FromSeconds(5));
             Assert(factory.Channel.Disposed);
@@ -178,7 +179,7 @@ internal static class DiscoveryTests
         await check("native UDP socket binds and cancels without network transmission", async () =>
         {
             var adapters = await new WindowsNetworkEnvironment().GetLanAdaptersAsync(CancellationToken.None);
-            if (adapters.Count == 0) { Console.WriteLine("SKIP native UDP: no LAN adapter."); return; }
+            if (adapters.Count == 0) throw new SkipException("No LAN adapter for native UDP binding.");
             using var channel = new UdpDiscoveryChannelFactory().Open(adapters[0]);
             using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
             try { await channel.ReceiveAsync(cancellation.Token); }
@@ -220,7 +221,8 @@ internal static class DiscoveryTests
     {
         public FakeChannel Channel { get; } = new();
         public bool Opened { get; private set; }
-        public IDiscoveryChannel Open(LanAdapter adapter) { Opened = true; return Channel; }
+        public TaskCompletionSource OpenedTask { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public IDiscoveryChannel Open(LanAdapter adapter) { Opened = true; OpenedTask.TrySetResult(); return Channel; }
     }
 
     private sealed class FakeChannel : IDiscoveryChannel

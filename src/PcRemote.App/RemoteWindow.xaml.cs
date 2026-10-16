@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -19,6 +20,7 @@ public partial class RemoteWindow : Window
     private long lastFrame, lastMove;
     private bool connected, staleReported;
     private int mouseButtons;
+    private FileWindow? files;
 
     public RemoteWindow(RemoteDesktopClient client, DiscoveredDevice device)
     {
@@ -26,6 +28,7 @@ public partial class RemoteWindow : Window
         this.client = client;
         DeviceText.Text = device.Name;
         Title = $"{device.Name} · PC Remote";
+        SystemEvents.SessionSwitch += OnSessionSwitch;
         renderTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Render, Render, Dispatcher);
         Loaded += async (_, _) => await client.RunAsync(device.Address, update => Interlocked.Exchange(ref pending, update));
         Deactivated += (_, _) =>
@@ -36,6 +39,8 @@ public partial class RemoteWindow : Window
         };
         Closed += async (_, _) =>
         {
+            SystemEvents.SessionSwitch -= OnSessionSwitch;
+            files?.Close();
             renderTimer.Stop();
             await client.DisposeAsync();
         };
@@ -47,6 +52,8 @@ public partial class RemoteWindow : Window
         if (update is not null)
         {
             connected = update.Connected;
+            FilesButton.IsEnabled = connected;
+            if (!connected) files?.Close();
             StatusText.Text = update.Status;
             current = update.Image;
             if (current is not null)
@@ -150,6 +157,24 @@ public partial class RemoteWindow : Window
         int key = KeyInterop.VirtualKeyFromKey(args.Key == System.Windows.Input.Key.System ? args.SystemKey : args.Key);
         if (key is >= 1 and <= 254) client.TryInput(new(kind, Key: key));
         args.Handled = true;
+    }
+
+    private void OnSessionSwitch(object sender, SessionSwitchEventArgs args)
+    {
+        if (args.Reason is SessionSwitchReason.SessionLock or SessionSwitchReason.SessionLogoff
+            or SessionSwitchReason.ConsoleDisconnect or SessionSwitchReason.RemoteDisconnect)
+        {
+            client.Stop();
+            Dispatcher.BeginInvoke(Close);
+        }
+    }
+
+    private void FilesClick(object sender, RoutedEventArgs args)
+    {
+        if (files is not null) { files.Activate(); return; }
+        files = new FileWindow(client) { Owner = this };
+        files.Closed += (_, _) => files = null;
+        files.Show();
     }
 
     private void DisconnectClick(object sender, RoutedEventArgs args) => Close();

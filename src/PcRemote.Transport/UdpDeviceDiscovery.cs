@@ -45,7 +45,12 @@ public sealed class UdpDeviceDiscovery(
                     budgetWindow = time.GetTimestamp();
                     packetCount = 0;
                 }
-                if (++packetCount > 64 || packet.Truncated || packet.InterfaceIndex != adapter.InterfaceIndex
+                if (++packetCount > 64)
+                {
+                    await Task.Delay(10, lifetime.Token);
+                    continue;
+                }
+                if (packet.Truncated || packet.InterfaceIndex != adapter.InterfaceIndex
                     || !LanNetwork.IsPeer(adapter, packet.Source) || !environment.HasDirectRoute(adapter, packet.Source)) continue;
                 try
                 {

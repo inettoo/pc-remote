@@ -7,7 +7,7 @@ namespace PcRemote.Transport;
 
 public static class DesktopTls
 {
-    private static readonly SslApplicationProtocol ApplicationProtocol = new("pc-remote/2");
+    private static readonly SslApplicationProtocol ApplicationProtocol = new("pc-remote/3");
 
     public static X509Certificate2 CreateCertificate()
     {
