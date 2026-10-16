@@ -1,0 +1,13 @@
+<Solution>
+  <Project Path="src/PcRemote.Contracts/PcRemote.Contracts.csproj" />
+  <Project Path="src/PcRemote.Protocol/PcRemote.Protocol.csproj" />
+  <Project Path="src/PcRemote.Controller/PcRemote.Controller.csproj" />
+  <Project Path="src/PcRemote.Host/PcRemote.Host.csproj" />
+  <Project Path="src/PcRemote.Service/PcRemote.Service.csproj" />
+  <Project Path="src/PcRemote.Transport/PcRemote.Transport.csproj" />
+  <Project Path="src/PcRemote.Capture/PcRemote.Capture.csproj" />
+  <Project Path="src/PcRemote.Input/PcRemote.Input.csproj" />
+  <Project Path="src/PcRemote.FileService/PcRemote.FileService.csproj" />
+  <Project Path="src/PcRemote.App/PcRemote.App.csproj" />
+  <Project Path="tests/PcRemote.Tests/PcRemote.Tests.csproj" />
+</Solution>

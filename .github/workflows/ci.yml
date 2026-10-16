@@ -1,0 +1,32 @@
+name: Windows CI
+on:
+  push:
+    branches: [main, 'foundation/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore PcRemote.slnx
+      - run: dotnet build PcRemote.slnx -c Release --no-restore
+      - run: dotnet run --project tests/PcRemote.Tests -c Release --no-build
+      - run: dotnet format PcRemote.slnx --verify-no-changes --no-restore
+      - run: dotnet publish src/PcRemote.App -c Release -r win-x64 --self-contained false -o artifacts/app
+      - shell: pwsh
+        run: |
+          Compress-Archive artifacts/app/* artifacts/pc-remote-0.0.1-win-x64.zip
+          Get-FileHash artifacts/pc-remote-0.0.1-win-x64.zip -Algorithm SHA256 | Format-List | Out-File artifacts/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc-remote-win-x64
+          path: |
+            artifacts/*.zip
+            artifacts/SHA256.txt
+          retention-days: 14
