@@ -34,6 +34,9 @@ jobs:
             $serviceInfo = Get-CimInstance Win32_Service -Filter "Name='PcRemoteHost'"
             $listener = Get-NetUDPEndpoint -LocalPort 45831 -ErrorAction SilentlyContinue | Where-Object OwningProcess -eq $serviceInfo.ProcessId
             if (-not $listener) { throw 'Host discovery socket is not owned by the service.' }
+            $desktopListener = Get-NetTCPConnection -LocalPort 45832 -State Listen -ErrorAction SilentlyContinue | Where-Object OwningProcess -eq $serviceInfo.ProcessId
+            if (-not $desktopListener) { throw 'Desktop socket is not owned by the service.' }
+            $service.Dispose()
           } finally {
             $removeProcess = Start-Process -FilePath $hostExe -ArgumentList '--uninstall', '--quiet' -WindowStyle Hidden -Wait -PassThru
             if ($removeProcess.ExitCode -ne 0) { throw "Host removal failed: $($removeProcess.ExitCode)" }

@@ -29,7 +29,18 @@ internal sealed class HostWindowsService : ServiceBase
         {
             try
             {
-                await new HostDiscoveryListener(new WindowsNetworkEnvironment(), Environment.MachineName).RunAsync(cancellationToken);
+                using var iteration = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var environment = new WindowsNetworkEnvironment();
+                Task discovery = new HostDiscoveryListener(environment, Environment.MachineName).RunAsync(iteration.Token);
+                Task desktop = new DesktopSessionServer(environment,
+                    exception => EventLog.WriteEntry($"Desktop session ended: {exception.Message}", EventLogEntryType.Warning)).RunAsync(iteration.Token);
+                try { await await Task.WhenAny(discovery, desktop); }
+                finally
+                {
+                    iteration.Cancel();
+                    try { await Task.WhenAll(discovery, desktop); }
+                    catch (OperationCanceledException) when (iteration.IsCancellationRequested) { }
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { return; }
             catch (Exception exception)

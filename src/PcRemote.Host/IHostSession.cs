@@ -4,6 +4,6 @@ namespace PcRemote.Host;
 
 public interface IHostSession : IAsyncDisposable
 {
-    SessionPermission GrantedPermissions { get; }
-    Task RevokeAsync(CancellationToken cancellationToken);
+    SessionCapability AvailableCapabilities { get; }
+    Task DisconnectAsync(CancellationToken cancellationToken);
 }

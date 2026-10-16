@@ -123,7 +123,7 @@ internal static class DiscoveryTests
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
             Assert(seen.Task.IsCompletedSuccessfully && factory.Channel.Disposed && factory.Channel.SendCount == 1);
         });
-        await check("network profile change fails closed and releases channel", async () =>
+        await check("adapter disappearance cancels discovery and releases channel", async () =>
         {
             var environment = new FakeEnvironment(Adapter) { RemoveAfterFirstRead = true };
             var factory = new FakeChannels();

@@ -1,8 +1,10 @@
+using System.Threading;
+using System.Threading.Tasks;
 using PcRemote.Contracts;
 
 namespace PcRemote.Capture;
 
 public interface IScreenCapture
 {
-    IAsyncEnumerable<ScreenFrame> CaptureAsync(CancellationToken cancellationToken);
+    Task<ScreenFrame> CaptureAsync(CancellationToken cancellationToken);
 }

@@ -1,12 +1,19 @@
 # LAN 协议
-产品 0.0.2；控制帧协议 1.0 与发现协议 2.0 独立版本。
+产品 0.0.3；控制帧协议 2.0 与发现协议 2.0 独立版本。
 
-## 控制帧 1.0
-4 字节无符号大端 payload 长度 + UTF-8 JSON Envelope；长度 1..1,048,576，分配前验证。
-必填 major=1、minor=0、requestId(非空 UUID)、type(1..64 字符)、payload(非 null JSON)。
-未知版本、截断、超限、畸形报文失败。目前只实现编解码，没有 TCP 控制监听。
-未来连接是控制端与 Host 直连，不使用任何注册/中继/账号服务器。依 ADR 0007，无账号/口令/逐次批准，信任整个直接局域网；TLS 加密与自动证书连续性策略另记 ADR，不宣称提供首次连接的账号身份认证。
-屏幕、输入、文件 payload 尚未定义，不能提前上线使用。破坏变更升 major；minor 只添加可协商的可选能力。
+## 控制帧 2.0
+4 字节无符号大端 UTF-8 JSON payload 长度，1..1,048,576 字节，分配前验证。
+Envelope 必填 major=2、minor=0、requestId=非空 UUID、type=1..64 字符、payload=非 null JSON；未知版本、截断/超限/坏 JSON 失败。
+TCP 45832，TLS 1.3 + ALPN pc-remote/2；无账号、口令、配对或批准消息。信任同一直接 LAN，TLS 不承诺首次身份认证；无外部服务器。
+消息：
+- Controller→Host：Input(RemoteInput)、Ping({})、Disconnect({})。
+- Agent→Host→Controller：ScreenFrame(DesktopImage)、DesktopUnavailable(SessionNotice)。
+- Host→Agent：Input(RemoteInput)、Disconnect({})。
+RemoteInput：kind 数字枚举 0 Move、1 LeftDown、2 LeftUp、3 RightDown、4 RightUp、5 Wheel、6 KeyDown、7 KeyUp、8 ReleaseAll；x/y 0..65535；key 1..254（键事件）；delta 为 -1200..1200 且是 120 的倍数（滚轮）。未使用字段默认 0。
+DesktopImage：width/height 1..1920，像素积≤3,686,400，jpeg 为 base64 字节数组，解码后 4..600,000 字节；声明尺寸必须匹配 JPEG 头。
+SessionNotice：text 必填、非空、最多 256 字符。未知控制消息/未定义 kind 拒绝；不接受可执行命令或任意文件路径。
+Controller 每 3 秒 Ping；Host 控制读取和代理消息最长 10 秒，客户端帧读取最长 15 秒。两秒无新画面遮罩并释放输入，队列溢出断开释放，不静默丢 key-up。
+发现协议与屏幕编码后续独立演进；破坏变更升级对应 major。
 
 ## UDP Discovery 2.0
 每个数据报为 1..512 字节 UTF-8 JSON；无长度前缀。所有字段必填，拒绝未知和重复字段，最多嵌套 4 层。
