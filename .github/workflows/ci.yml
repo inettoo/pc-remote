@@ -1,7 +1,7 @@
 name: Windows CI
 on:
   push:
-    branches: [main, 'foundation/**', 'feature/**', 'feature/**']
+    branches: [main, 'foundation/**', 'feature/**']
   pull_request:
 permissions:
   contents: read
@@ -41,6 +41,28 @@ jobs:
             $removeProcess = Start-Process -FilePath $hostExe -ArgumentList '--uninstall', '--quiet' -WindowStyle Hidden -Wait -PassThru
             if ($removeProcess.ExitCode -ne 0) { throw "Host removal failed: $($removeProcess.ExitCode)" }
           }
+      - run: dotnet publish tests/PcRemote.AgentProbe -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o artifacts/probe
+      - name: LocalSystem to interactive-user agent probe
+        shell: pwsh
+        run: |
+          $probeExe = (Resolve-Path artifacts/probe/PcRemote.AgentProbe.exe).Path
+          $hostExe = (Resolve-Path artifacts/host/PcRemote.Host.exe).Path
+          $reportPath = Join-Path (Resolve-Path artifacts).Path 'agent-probe.json'
+          $taskName = "PcRemoteAgentProbe-$env:GITHUB_RUN_ID"
+          $taskArguments = '"{0}" "{1}"' -f $hostExe, $reportPath
+          $action = New-ScheduledTaskAction -Execute $probeExe -Argument $taskArguments -WorkingDirectory $env:GITHUB_WORKSPACE
+          $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+          try {
+            Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Force | Out-Null
+            Start-ScheduledTask -TaskName $taskName
+            for ($attempt = 0; $attempt -lt 25 -and -not (Test-Path -LiteralPath $reportPath); $attempt++) { Start-Sleep -Seconds 1 }
+            if (-not (Test-Path -LiteralPath $reportPath)) { throw 'Agent probe timed out without a report.' }
+            $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+            Write-Output ($report | ConvertTo-Json -Compress)
+            if ($report.status -eq 'failed') { throw 'Interactive-user agent probe failed.' }
+          } finally {
+            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+          }
       - shell: pwsh
         run: |
           $version = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText
@@ -53,4 +75,5 @@ jobs:
           path: |
             artifacts/*.exe
             artifacts/SHA256.txt
+            artifacts/agent-probe.json
           retention-days: 14

@@ -7,7 +7,7 @@ public sealed record Envelope(int Major, int Minor, Guid RequestId, string Type,
 
 public static class FrameCodec
 {
-    public const int Major = 2;
+    public const int Major = 3;
     public const int Minor = 0;
     public const int MaxPayloadBytes = 1024 * 1024;
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)

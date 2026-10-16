@@ -2,10 +2,16 @@ using PcRemote.Contracts;
 
 namespace PcRemote.FileService;
 
-// Implementations must confine paths to a user-selected root, including link resolution.
 public interface ISharedFiles
 {
-    Task<IReadOnlyList<FileEntry>> ListAsync(string relativePath, CancellationToken cancellationToken);
-    Task DownloadAsync(string relativePath, Stream destination, CancellationToken cancellationToken);
-    Task UploadAsync(string relativePath, Stream source, CancellationToken cancellationToken);
+    Task<DirectoryListing> ListAsync(string relativePath, CancellationToken cancellationToken);
+    Task<Stream> OpenReadAsync(string relativePath, CancellationToken cancellationToken);
+    Task<IFileUpload> BeginUploadAsync(string relativePath, long length, CancellationToken cancellationToken);
+}
+
+public interface IFileUpload : IAsyncDisposable
+{
+    long Written { get; }
+    Task WriteAsync(long offset, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken);
+    Task<string> CommitAsync(string expectedSha256, CancellationToken cancellationToken);
 }

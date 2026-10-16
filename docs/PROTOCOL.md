@@ -1,10 +1,10 @@
 # LAN 协议
-产品 0.0.3；控制帧协议 2.0 与发现协议 2.0 独立版本。
+产品 0.0.4；控制帧协议 3.0 与发现协议 2.0 独立版本。
 
-## 控制帧 2.0
+## 控制帧 3.0
 4 字节无符号大端 UTF-8 JSON payload 长度，1..1,048,576 字节，分配前验证。
-Envelope 必填 major=2、minor=0、requestId=非空 UUID、type=1..64 字符、payload=非 null JSON；未知版本、截断/超限/坏 JSON 失败。
-TCP 45832，TLS 1.3 + ALPN pc-remote/2；无账号、口令、配对或批准消息。信任同一直接 LAN，TLS 不承诺首次身份认证；无外部服务器。
+Envelope 必填 major=3、minor=0、requestId=非空 UUID、type=1..64 字符、payload=非 null JSON；未知版本、截断/超限/坏 JSON 失败。
+TCP 45832，TLS 1.3 + ALPN pc-remote/3；无账号、口令、配对或批准消息。信任同一直接 LAN，TLS 不承诺首次身份认证；无外部服务器。
 消息：
 - Controller→Host：Input(RemoteInput)、Ping({})、Disconnect({})。
 - Agent→Host→Controller：ScreenFrame(DesktopImage)、DesktopUnavailable(SessionNotice)。
@@ -14,6 +14,18 @@ DesktopImage：width/height 1..1920，像素积≤3,686,400，jpeg 为 base64 �
 SessionNotice：text 必填、非空、最多 256 字符。未知控制消息/未定义 kind 拒绝；不接受可执行命令或任意文件路径。
 Controller 每 3 秒 Ping；Host 控制读取和代理消息最长 10 秒，客户端帧读取最长 15 秒。两秒无新画面遮罩并释放输入，队列溢出断开释放，不静默丢 key-up。
 发现协议与屏幕编码后续独立演进；破坏变更升级对应 major。
+
+## 文件消息（控制帧 3.0）
+操作使用同一个非空 Envelope.requestId，返回必须回传该 ID。一个连接最多一个活动文件传输。
+- FileList {relativePath} → FileDirectory {relativePath,items:[{name,relativePath,isDirectory,length}],truncated}。
+- FileDownload {relativePath} → FileStarted {length} → FileChunk {offset,data:base64}* → FileComplete {length,sha256}。
+- FileUpload {relativePath,length} → FileAck {offset:0}；FileUploadChunk {offset,data} → FileAck {offset:累计字节}；FileUploadCommit {length,sha256} → FileComplete。
+- FileCancel {}：取消匹配 ID 的上传/下载；FileError {code,text} 表示失败或取消，不包含原生绝对路径异常。
+单文件 0..1,073,741,824 字节；每块 1..32768 字节，偏移严格连续，不能越过声明长度。sha256 为 64 个十六进制字符，接收方计算实际哈希再提交。
+目录最多 128 项，相对路径最多 512 字符，name 必须是相对路径的叶名称，拒绝设备名/绝对路径/ADS/遍历等。客户端忽略不属于当前 ID 的迟到文件响应；邮箱最多 8 项；每条文件响应最长等待 30 秒。
+文件与屏幕消息序列化写入同一个流，不交错 header/payload；客户端独立解析分派，临时背压允许降低画面更新频率。
+上传不覆盖远端已有目标；未完成/校验失败/取消都不提交。下载覆盖仅由控制端保存对话框决定。
+本次增添多路消息且与严格旧端不兼容，控制 major 由 2 升 3，发现协议保持独立不变。
 
 ## UDP Discovery 2.0
 每个数据报为 1..512 字节 UTF-8 JSON；无长度前缀。所有字段必填，拒绝未知和重复字段，最多嵌套 4 层。

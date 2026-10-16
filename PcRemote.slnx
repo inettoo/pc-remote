@@ -11,4 +11,5 @@
   <Project Path="src/PcRemote.App/PcRemote.App.csproj" />
   <Project Path="tests/PcRemote.Tests/PcRemote.Tests.csproj" />
   <Project Path="src/PcRemote.Windows/PcRemote.Windows.csproj" />
+  <Project Path="tests/PcRemote.AgentProbe/PcRemote.AgentProbe.csproj" />
 </Solution>

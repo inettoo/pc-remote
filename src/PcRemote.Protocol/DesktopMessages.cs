@@ -19,7 +19,7 @@ public static class DesktopMessages
         MaxDepth = 8
     };
 
-    public static Envelope Message<T>(string type, T payload) => new(FrameCodec.Major, FrameCodec.Minor, Guid.NewGuid(), type,
+    public static Envelope Message<T>(string type, T payload, Guid? requestId = null) => new(FrameCodec.Major, FrameCodec.Minor, requestId ?? Guid.NewGuid(), type,
         JsonSerializer.SerializeToElement(payload, Options));
 
     public static T Read<T>(Envelope envelope) => envelope.Payload.Deserialize<T>(Options)

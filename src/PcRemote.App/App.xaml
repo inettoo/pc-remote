@@ -3,7 +3,30 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  StartupUri="MainWindow.xaml" ThemeMode="System">
  <Application.Resources>
+  <DrawingImage x:Key="ProductIcon">
+   <DrawingImage.Drawing><DrawingGroup>
+    <GeometryDrawing Brush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" Geometry="M2,2 L14,2 L14,11 L9,11 L9,13 L12,13 L12,15 L4,15 L4,13 L7,13 L7,11 L2,11 Z"/>
+    <GeometryDrawing Brush="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" Geometry="M3,3 L13,3 L13,10 L3,10 Z"/>
+   </DrawingGroup></DrawingImage.Drawing>
+  </DrawingImage>
+  <Style TargetType="Window"><Setter Property="Icon" Value="{StaticResource ProductIcon}"/></Style>
   <Style TargetType="Button"><Setter Property="Padding" Value="16,10"/><Setter Property="Margin" Value="0,4"/></Style>
+  <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+   <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+   <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
+   <Setter Property="FontWeight" Value="SemiBold"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+    <Border CornerRadius="6" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+    </Border>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsMouseOver" Value="True"><Setter Property="Opacity" Value="0.9"/></Trigger>
+     <Trigger Property="IsPressed" Value="True"><Setter Property="Opacity" Value="0.8"/></Trigger>
+     <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Style>
+
   <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
  </Application.Resources>
 </Application>

@@ -1,0 +1,36 @@
+<Window x:Class="PcRemote.App.FileWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="PC Remote · 用户文件" Width="900" Height="650" MinWidth="700" MinHeight="480">
+ <Grid Margin="24">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel>
+   <TextBlock Text="用户文件" FontSize="26" FontWeight="SemiBold"/>
+   <TextBlock Text="{Binding DisplayPath}" Margin="0,8,0,16" Opacity="0.7" TextWrapping="Wrap"/>
+  </StackPanel>
+  <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+   <Button Content="上一级" Click="UpClick" IsEnabled="{Binding CanUp}" Margin="0,0,8,0"/>
+   <Button Content="刷新" Click="RefreshClick" IsEnabled="{Binding CanAct}" Margin="0,0,8,0"/>
+   <Button Content="上传文件" Style="{StaticResource PrimaryButton}" Click="UploadClick" IsEnabled="{Binding CanAct}" Margin="0,0,8,0"/>
+   <Button Content="打开 / 下载" Click="OpenClick" IsEnabled="{Binding CanOpen}" Margin="0,0,8,0"/>
+   <Button Content="取消传输" Click="CancelClick" IsEnabled="{Binding Busy}"/>
+  </StackPanel>
+  <ListView Grid.Row="2" ItemsSource="{Binding Entries}" SelectedItem="{Binding Selected}" IsEnabled="{Binding CanAct}" MouseDoubleClick="OpenClick" AutomationProperties.Name="远端用户文件">
+   <ListView.View><GridView>
+    <GridViewColumn Header="名称" DisplayMemberBinding="{Binding Name}" Width="420"/>
+    <GridViewColumn Header="类型" Width="90"><GridViewColumn.CellTemplate><DataTemplate>
+     <TextBlock><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="文件"/>
+      <Style.Triggers><DataTrigger Binding="{Binding IsDirectory}" Value="True"><Setter Property="Text" Value="文件夹"/></DataTrigger></Style.Triggers>
+     </Style></TextBlock.Style></TextBlock>
+    </DataTemplate></GridViewColumn.CellTemplate></GridViewColumn>
+    <GridViewColumn Header="字节" DisplayMemberBinding="{Binding Length}" Width="150"/>
+   </GridView></ListView.View>
+  </ListView>
+  <StackPanel Grid.Row="3" Margin="0,16,0,0">
+   <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="5"/>
+   <TextBlock Text="{Binding Status}" Margin="0,10,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+   <TextBlock Text="单文件最大 1 GiB · 上传不覆盖同名文件 · 链接和云占位路径暂不支持" Margin="0,6,0,0" Opacity="0.6"/>
+  </StackPanel>
+ </Grid>
+</Window>
+

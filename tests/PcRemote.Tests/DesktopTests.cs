@@ -46,6 +46,24 @@ internal static class DesktopTests
             var received = await FrameCodec.ReadAsync(stream);
             Assert(received.Type == "Input" && DesktopMessages.Read<RemoteInput>(received) == input);
         });
+        await check("file wire rejects oversized blocks and unsafe directory metadata", () =>
+        {
+            foreach (var block in new[] { new FileBlock(-1, new byte[1]), new FileBlock(0, new byte[PcRemote.Contracts.FileTransferLimits.ChunkBytes + 1]) })
+            {
+                try { FileMessages.Validate(block); }
+                catch (InvalidDataException) { continue; }
+                throw new Exception("Accepted invalid wire block.");
+            }
+            foreach (var item in new[] { new RemoteFileItem("../escape", "../escape", false, 0),
+                new RemoteFileItem("safe.txt", "../safe.txt", false, 0), new RemoteFileItem("CON", "CON", false, 0),
+                new RemoteFileItem("one.txt", "two.txt", false, 0) })
+            {
+                try { FileMessages.Validate(new FileDirectory("", [item], false)); }
+                catch (InvalidDataException) { continue; }
+                throw new Exception("Accepted unsafe wire metadata.");
+            }
+            return Task.CompletedTask;
+        });
         await check("real TLS 1.3 loopback transports versioned frames", async () =>
         {
             using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));

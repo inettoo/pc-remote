@@ -25,7 +25,7 @@ public partial class MainWindow : Window
     {
         if (remote is not null) { remote.Activate(); return; }
         if (sender is not System.Windows.Controls.Button { DataContext: PcRemote.Contracts.DiscoveredDevice device }) return;
-        remote = new RemoteWindow(new RemoteDesktopClient(environment), device);
+        remote = new RemoteWindow(new RemoteDesktopClient(environment, new TlsDesktopConnector()), device);
         remote.Closed += (_, _) => remote = null;
         remote.Show();
     }

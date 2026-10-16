@@ -9,6 +9,7 @@
     <DefineConstants>$(DefineConstants);SINGLE_FILE_HOST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../PcRemote.FileService/PcRemote.FileService.csproj" />
     <ProjectReference Include="../PcRemote.Capture/PcRemote.Capture.csproj" />
     <ProjectReference Include="../PcRemote.Input/PcRemote.Input.csproj" />
     <ProjectReference Include="../PcRemote.Contracts/PcRemote.Contracts.csproj" />

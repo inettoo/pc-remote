@@ -36,7 +36,12 @@ public sealed class HostDiscoveryListener(INetworkEnvironment environment, strin
                 budgetWindow = Stopwatch.GetTimestamp();
                 packets = 0;
             }
-            if (++packets > 64 || result.ReceivedBytes > DiscoveryCodec.MaxDatagramBytes
+            if (++packets > 64)
+            {
+                await Task.Delay(10, cancellationToken);
+                continue;
+            }
+            if (result.ReceivedBytes > DiscoveryCodec.MaxDatagramBytes
                 || (result.SocketFlags & SocketFlags.Truncated) != 0) continue;
             if (refreshed == 0 || Stopwatch.GetElapsedTime(refreshed) >= TimeSpan.FromSeconds(2))
             {

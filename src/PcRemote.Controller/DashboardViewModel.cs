@@ -15,7 +15,7 @@ public sealed class DashboardViewModel(INetworkEnvironment environment, IDeviceD
     private string error = "";
     public event PropertyChangedEventHandler? PropertyChanged;
     public ObservableCollection<DiscoveredDevice> Devices { get; } = [];
-    public string Version => "v0.0.3 · LAN Desktop";
+    public string Version => "v0.0.4 · LAN Remote";
     public string Status { get => status; private set { status = value; Changed(); } }
     public string Error { get => error; private set { error = value; Changed(); } }
 
@@ -43,8 +43,9 @@ public sealed class DashboardViewModel(INetworkEnvironment environment, IDeviceD
                     continue;
                 }
                 var snapshots = new Dictionary<LanAdapter, IReadOnlyList<DiscoveredDevice>>();
-                var workers = adapters.Select(adapter => discovery.RunAsync(adapter,
-                    new Progress<IReadOnlyList<DiscoveredDevice>>(snapshot =>
+                var workers = adapters.Select(adapter =>
+                {
+                    var progress = new Progress<IReadOnlyList<DiscoveredDevice>>(snapshot =>
                     {
                         if (generation != currentGeneration || current.IsCancellationRequested) return;
                         snapshots[adapter] = snapshot;
@@ -52,7 +53,9 @@ public sealed class DashboardViewModel(INetworkEnvironment environment, IDeviceD
                         Devices.Clear();
                         foreach (var device in devices) Devices.Add(device);
                         Status = devices.Length == 0 ? "正在寻找被控电脑，请在另一台电脑运行被控端 EXE。" : $"已发现 {devices.Length} 台被控电脑";
-                    }), current.Token)).ToList();
+                    });
+                    return Task.Run(() => discovery.RunAsync(adapter, progress, current.Token), current.Token);
+                }).ToList();
                 // Restart only when adapter membership changes, preserving stable device rows.
                 workers.Add(WatchAdaptersAsync(adapters, current.Token));
                 try { await await Task.WhenAny(workers); }

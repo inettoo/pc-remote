@@ -94,9 +94,9 @@ internal sealed class DesktopSessionServer(INetworkEnvironment environment, Acti
                 while (true)
                 {
                     var message = await FrameCodec.ReadAsync(pipe, lifetime.Token).WaitAsync(TimeSpan.FromSeconds(10), lifetime.Token);
-                    if (message.Type is not ("ScreenFrame" or "DesktopUnavailable")) throw new InvalidDataException("Unexpected agent message.");
+                    if (message.Type is not ("ScreenFrame" or "DesktopUnavailable") && !FileMessages.IsResponse(message.Type)) throw new InvalidDataException("Unexpected agent message.");
                     if (message.Type == "ScreenFrame") DesktopMessages.Validate(DesktopMessages.Read<DesktopImage>(message));
-                    else DesktopMessages.Validate(DesktopMessages.Read<SessionNotice>(message));
+                    else if (message.Type == "DesktopUnavailable") DesktopMessages.Validate(DesktopMessages.Read<SessionNotice>(message));
                     await FrameCodec.WriteAsync(tls, message, lifetime.Token);
                 }
             }
@@ -108,8 +108,8 @@ internal sealed class DesktopSessionServer(INetworkEnvironment environment, Acti
                     var message = await FrameCodec.ReadAsync(tls, lifetime.Token).WaitAsync(TimeSpan.FromSeconds(10), lifetime.Token);
                     if (message.Type == "Disconnect") return;
                     if (message.Type == "Ping") continue;
-                    if (message.Type != "Input") throw new InvalidDataException("Unexpected controller message.");
-                    DesktopMessages.Validate(DesktopMessages.Read<RemoteInput>(message));
+                    if (message.Type != "Input" && !FileMessages.IsRequest(message.Type)) throw new InvalidDataException("Unexpected controller message.");
+                    if (message.Type == "Input") DesktopMessages.Validate(DesktopMessages.Read<RemoteInput>(message));
                     await FrameCodec.WriteAsync(pipe, message, lifetime.Token);
                 }
             }
