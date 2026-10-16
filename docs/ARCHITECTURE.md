@@ -1,17 +1,20 @@
 # 架构
-依赖方向：App → Controller → Contracts；Host → Contracts；Transport → Protocol；Capture/Input/FileService → Contracts；Service 仅为进程边界占位。
-Protocol 无 UI/Windows 依赖。组合根在 App，未来在此注入具体实现；不得让 ViewModel 创建 socket。
-|模块|职责|禁止|
-|---|---|---|
-|App|WPF View 与呈现状态|直接联网或调用 Win32|
-|Controller|发现、连接、显示会话编排|注入输入到本机|
-|Host|授权与会话生命周期|绕过预设权限与密钥校验|
-|Service|未来受限 IPC 契约；当前无系统服务|Session 0 采集/输入|
-|Protocol|线格式、版本、长度边界|业务与设备操作|
-|Transport|接口绑定、TLS、收发、背压|弹 UI 或解释权限|
-|Capture|用户会话屏幕帧|联网|
-|Input|被授权会话的输入、释放键|提升权限|
-|FileService|共享根内文件操作|任意绝对路径访问|
-所有异步边界可取消；会话关闭先撤销权限，再停止输入/采集/传输。帧通道有界，屏幕丢旧帧，文件不得静默丢块。
-v0.0.1 除 Protocol 与 UI 外是接口骨架，不注册后台任务、不监听、不安装服务。
-未来 Host 与 UI 同一交互用户会话运行；若增加 Windows Service，须新增 ADR 与命名管道 ACL、身份验证设计。
+|模块|职责|
+|---|---|
+|App|控制端 WPF；组合根构造适配器，无网络业务|
+|Controller|自动发现、多网卡内部合并、连接与呈现状态编排|
+|Host|单 EXE 引导/安装器、ServiceBase 服务宿主|
+|Service|服务/用户桌面代理边界契约，后续接入代理生命周期|
+|Contracts|平台中立能力接口与数据模型|
+|Protocol|独立控制帧 1.0 与发现协议 2.0，不含操作系统 API|
+|Transport|有界 UDP/TCP、LAN 策略与设备目录|
+|Windows|网卡枚举、IP Helper 直接路由验证|
+|Capture|交互用户会话屏幕采集|
+|Input|交互用户会话键鼠注入与释放|
+|FileService|受限共享根内文件操作|
+依赖：App → Controller + Windows（仅组合根）；Controller → Contracts/Transport；Host → Windows/Contracts；Windows → Transport/Contracts；Transport → Protocol/Contracts；Capture/Input/FileService/Service → Contracts。
+自动扫描在 Controller 启动，后台接口变化无需用户配置；Transport 的 socket 可注入替身，错误/取消时所有任务与 socket 都被观察和释放。
+Host 默认入口安装至 Program Files/PcRemote/PcRemote.Host.exe，启动 PcRemoteHost；SCM 使用 --service，--uninstall 移除服务及自身规则；--diagnose 不修改系统。
+ServiceBase 在 LocalSystem / Session 0 中运行。当前只处理受限 UDP 发现；后续 Capture/Input 必须在用户代理执行，不直接放进服务。
+当前没有桌面代理实现，不宣称能控制远程电脑。代理 IPC 需限定 System/目标用户 ACL、绑定会话身份、限制消息与大小；后续 ADR 细化。
+无逐次授权/配对口令的行为由 ADR 0007 明确覆盖旧设计；不把发现报文当身份认证。

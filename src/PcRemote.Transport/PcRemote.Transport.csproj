@@ -1,1 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../PcRemote.Protocol/PcRemote.Protocol.csproj" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../PcRemote.Protocol/PcRemote.Protocol.csproj" />
+    <ProjectReference Include="../PcRemote.Contracts/PcRemote.Contracts.csproj" />
+  </ItemGroup>
+</Project>

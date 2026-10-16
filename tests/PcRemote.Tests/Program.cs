@@ -59,4 +59,5 @@ await Check("cancel read", async () =>
 });
 await Check("oversized write", () => Reject<InvalidDataException>(() => FrameCodec.WriteAsync(new MemoryStream(),
     new Envelope(1, 0, Guid.NewGuid(), "Hello", JsonSerializer.SerializeToElement(new string('x', FrameCodec.MaxPayloadBytes))))));
+await DiscoveryTests.RunAsync(Check);
 Console.WriteLine($"{passed} checks passed.");

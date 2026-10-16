@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../PcRemote.Controller/PcRemote.Controller.csproj" />
+  <ProjectReference Include="../PcRemote.Windows/PcRemote.Windows.csproj" />
   </ItemGroup>
 </Project>

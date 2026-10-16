@@ -1,7 +1,7 @@
 name: Windows CI
 on:
   push:
-    branches: [main, 'foundation/**']
+    branches: [main, 'foundation/**', 'feature/**', 'feature/**']
   pull_request:
 permissions:
   contents: read
@@ -18,15 +18,34 @@ jobs:
       - run: dotnet build PcRemote.slnx -c Release --no-restore
       - run: dotnet run --project tests/PcRemote.Tests -c Release --no-build
       - run: dotnet format PcRemote.slnx --verify-no-changes --no-restore
-      - run: dotnet publish src/PcRemote.App -c Release -r win-x64 --self-contained false -o artifacts/app
+      - run: dotnet publish src/PcRemote.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o artifacts/controller
+      - run: dotnet publish src/PcRemote.Host -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o artifacts/host
+      - name: Service installation and removal smoke
+        shell: pwsh
+        run: |
+          $hostExe = (Resolve-Path artifacts/host/PcRemote.Host.exe).Path
+          try {
+            $installProcess = Start-Process -FilePath $hostExe -ArgumentList '--install', '--quiet' -WindowStyle Hidden -Wait -PassThru
+            if ($installProcess.ExitCode -ne 0) { throw "Host installation failed: $($installProcess.ExitCode)" }
+            $service = Get-Service PcRemoteHost
+            if ($service.Status -ne 'Running' -or $service.StartType -ne 'Automatic') { throw 'Service is not running automatically.' }
+            $serviceInfo = Get-CimInstance Win32_Service -Filter "Name='PcRemoteHost'"
+            $listener = Get-NetUDPEndpoint -LocalPort 45831 -ErrorAction SilentlyContinue | Where-Object OwningProcess -eq $serviceInfo.ProcessId
+            if (-not $listener) { throw 'Host discovery socket is not owned by the service.' }
+          } finally {
+            $removeProcess = Start-Process -FilePath $hostExe -ArgumentList '--uninstall', '--quiet' -WindowStyle Hidden -Wait -PassThru
+            if ($removeProcess.ExitCode -ne 0) { throw "Host removal failed: $($removeProcess.ExitCode)" }
+          }
       - shell: pwsh
         run: |
-          Compress-Archive artifacts/app/* artifacts/pc-remote-0.0.1-win-x64.zip
-          Get-FileHash artifacts/pc-remote-0.0.1-win-x64.zip -Algorithm SHA256 | Format-List | Out-File artifacts/SHA256.txt
+          $version = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText
+          Copy-Item artifacts/host/PcRemote.Host.exe "artifacts/PcRemote.Host-$version.exe"
+          Copy-Item artifacts/controller/PcRemote.App.exe "artifacts/PcRemote.Controller-$version.exe"
+          Get-FileHash artifacts/*.exe -Algorithm SHA256 | Format-List | Out-File artifacts/SHA256.txt
       - uses: actions/upload-artifact@v4
         with:
           name: pc-remote-win-x64
           path: |
-            artifacts/*.zip
+            artifacts/*.exe
             artifacts/SHA256.txt
           retention-days: 14
